@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
-
 from datetime import datetime
-
 from flask_sqlalchemy import SQLAlchemy
-
-from werkzeug.security import (generate_password_hash, check_password_hash)
-
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask import url_for
-
-from flask_login import (current_user, UserMixin)
-
+from flask_login import current_user, UserMixin
 
 db = SQLAlchemy()
 
@@ -19,27 +13,23 @@ jobhunter_job = db.Table(
     db.Column('job_id', db.Integer, db.ForeignKey('job.id', ondelete='CASCADE'))
 )
 
-
 class Base(db.Model):
     __abstract__ = True
-
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime,
                         default=datetime.utcnow,
                         onupdate=datetime.utcnow)
 
-
 class User(Base, UserMixin):
     __tablename__ = 'user'
-
     ROLE_JOBHUNTER = 10
     ROLE_COMPANY = 20
     ROLE_ADMIN = 30
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(32), unique=True, index=True, nullable=True)
+    username = db.Column(db.String(32), unique=True, index=True, nullable=False)
     _password = db.Column('password', db.String(128), nullable=False)
-    phone = db.Column(db.String(18), unique=True, index=True, nullable=True)
+    phone = db.Column(db.String(18), unique=True, index=True)
     is_enable = db.Column(db.Boolean, default=True)
     email = db.Column(db.String(64), unique=True, index=True, nullable=False)
     role = db.Column(db.SmallInteger, default=ROLE_JOBHUNTER)
@@ -50,7 +40,7 @@ class User(Base, UserMixin):
     # 该处是否可以使用外键
     #company_id = db.Column(db.Integer)
     # 暂时先用简历地址代替简历存储
-    resume_url = db.Column(db.String(64))
+    #resume_url = db.Column(db.String(64))
 
     def __repr__(self):
         return '<User: {}>'.format(self.username)
@@ -78,11 +68,13 @@ class User(Base, UserMixin):
     def is_jobhunter(self):
         return self.role == self.ROLE_JOBHUNTER
 
+    '''
     @property
     def is_enable_jobs(self):
         if not self.is_company:
             raise AttributeError("User类缺少is_enable_jobs属性")
         return self.jobs.filter(Job.is_enable.is_(True))
+    '''
 
 
 class Company(Base):
@@ -93,8 +85,8 @@ class Company(Base):
     email = db.Column(db.String(64), unique=True, index=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"))
     user = db.relationship("User", uselist=False, backref=db.backref("company_detail", uselist=False))
-    website = db.Column(db.String(64), nullable=True)
-    address = db.Column(db.String(64), nullable=True)
+    website = db.Column(db.String(64))
+    address = db.Column(db.String(64))
     logo = db.Column(db.String(256))
     # 融资进度
     finance_stage = db.Column(db.String(128))
@@ -110,6 +102,7 @@ class Company(Base):
     def __repr__(self):
         return '<Company: {}'.format(self.name)
 
+    '''
     @property
     def password(self):
         return self._password
@@ -120,6 +113,7 @@ class Company(Base):
 
     def check_password(self, password):
         return check_password_hash(self._password, password)
+    '''
 
     @property
     def tag_list(self):
@@ -134,7 +128,6 @@ class Job(Base):
     salary_low = db.Column(db.Integer)
     salary_high = db.Column(db.Integer)
     # 工作详情页对工作需求的描述 
-    #salary_high = db.Column(db.Integer, nullable=False)
     description = db.Column(db.Text)
     # 工作待遇 
     treatment = db.Column(db.Text)
